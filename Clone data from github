@@ -2,47 +2,42 @@ from google.colab import drive
 drive.mount('/content/drive')
 
 import os
-os.system('mkdir detect_sarcasm_dataset')
-link_1 = 'https://github.com/Sang-UIT/CS114'
-os.system(f'git clone {link_1}')
-group_name = link_1.split('/')[-1]
-data_path = os.path.join(group_name, 'sarcasm_detection_dataset.json')
-os.system(f'mv /content/CS114/sarcasm_detection_dataset.json /content/detect_sarcasm_dataset')
-os.system(f'rm -rf {group_name}')
-
-import json
-with open(f'/content/detect_sarcasm_dataset/sarcasm_detection_dataset.json') as f:
-  data_set = json.load(f)
+os.system(f'rm -rf CS114')
 
 import pandas as pd
 df = pd.DataFrame(columns = ['title', 'is_sarcasm'])
 
-for i in range(len(data_set)):
-  lines = data_set[i];
-  df.loc[i] = [lines["title"],lines["is_sarcasm"]]
+links = ['https://github.com/phongidoit/CS114.git',
+                'https://github.com/HungStark/sarcasm_detection_dataset.git',
+                'https://github.com/TruongNoDame/Sarcasm-Detection.git',
+                'https://github.com/npk7264/CS114.git',
+                'https://github.com/ngcthc/CS114-ML-Public.git',
+                'https://github.com/Sang-UIT/CS114.git',
+                'https://github.com/Kuma221203/CS114.git'
+                ]
 
-links = ['https://github.com/phongidoit/CS114',
-         'https://github.com/TruongNoDame/Sarcasm-Detection',
-         'https://github.com/npk7264/CS114',
-         'https://github.com/ngcthc/CS114-ML-Public'
-         ]
-os.system('mkdir detect_sarcasm_dataset')
 for link in links:
   print(f'clone from this link: {link}')
   os.system(f'git clone {link}')
-  group_name = link.split('/')[-1]
+  group_name1 = link.split('/')[-1]
+  group_name = group_name1.split('.')[0]
   df1 = pd.DataFrame(columns = ['title', 'is_sarcasm'])
-  data_path = os.path.join(group_name, 'sarcasm_detection_dataset.json')
-  with open(f'/content/{data_path}') as f:
-    data_set = json.load(f)
+  if link != 'https://github.com/tqnghia210/CS114.git':
+    data_path = os.path.join(group_name, 'sarcasm_detection_dataset.json')
+  else:
+    data_path = os.path.join(group_name, 'data_ne.json')
   
+  dt = pd.read_json(f'/content/{data_path}', orient='records')
+  if link not in ['https://github.com/Sang-UIT/CS114.git','https://github.com/phongidoit/CS114.git']:
+    dt.rename(columns={'headline':'title'}, inplace=True)
+    dt.rename(columns={'is_sarcastic':'is_sarcasm'}, inplace=True)
+    dt.drop('article_link', axis=1, inplace=True)
   os.system(f'rm -rf {group_name}')
-  for i in range(len(data_set)):
-    if link == 'https://github.com/phongidoit/CS114':
-      df1.loc[i] = [data_set[i]["title"], data_set[i]["is_sarcasm"]]
-    else:
-      df1.loc[i] = [data_set[i]["headline"], data_set[i]["is_sarcastic"]]
-  df = pd.concat([df, df1], ignore_index = True)
+  df = pd.concat([df, dt], ignore_index= True)
   
+df.drop(df.loc[df['title']==''].index, inplace=True)
+df.dropna(axis=0, inplace=True)
+df['is_sarcasm'] = df['is_sarcasm'].astype(float)
+
 X = df['title']
 y = df['is_sarcasm']
